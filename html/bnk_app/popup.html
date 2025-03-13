@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+    <style>
+        ul { list-style-type: none; padding-left: 20px; }
+        li { padding: 5px; background: #f4f4f4; margin: 5px 0; cursor: grab; }
+    </style>
+</head>
+<body>
+
+    <h3>트리 수정</h3>
+    <ul id="tree"></ul>
+    <button onclick="sendUpdatedJson()">저장</button>
+
+    <script>
+        let jsonData = [];
+    
+        window.addEventListener("message", function(event) {
+            if (event.data) {
+                jsonData = JSON.parse(event.data);
+                console.log("팝업에서 받은 JSON:", jsonData);
+                document.getElementById("tree").innerHTML = ""; // 기존 내용 제거
+                generateTree(jsonData, document.getElementById("tree"));
+            }
+        });
+    
+        function generateTree(data, parentElement) {
+            data.forEach(item => {
+                let li = document.createElement("li");
+                li.textContent = item.name;
+                li.dataset.name = item.name;
+                li.dataset.depth = item.depth;
+                li.dataset.useState = item.use_state; // use_state 속성 추가
+    
+                let ul = document.createElement("ul");
+                li.appendChild(ul);
+                parentElement.appendChild(li);
+    
+                if (item.children) {
+                    generateTree(item.children, ul);
+                }
+    
+                new Sortable(ul, {
+                    group: 'shared',  // 그룹을 shared로 설정해 여러 트리에서 아이템을 드래그 할 수 있도록
+                    animation: 150,
+                    fallbackOnBody: true,
+                    swapThreshold: 0.65
+                });
+            });
+        }
+    
+        function parseTree(element) {
+            // depth와 use_state를 포함하여 객체를 반환
+            let obj = {
+                name: element.dataset.name,
+                depth: parseInt(element.dataset.depth), // depth는 정수로 변환
+                use_state: element.dataset.useState === "true", // use_state는 boolean으로 변환
+                children: []
+            };
+    
+            let children = element.querySelectorAll(":scope > ul > li");
+            children.forEach(child => {
+                obj.children.push(parseTree(child));
+            });
+    
+            return obj;
+        }
+    
+        function sendUpdatedJson() {
+            let updatedData = [];
+            document.querySelectorAll("#tree > li").forEach(li => {
+                updatedData.push(parseTree(li));
+            });
+    
+            window.opener.postMessage(JSON.stringify(updatedData), "*"); // 부모 창으로 전송
+            window.close(); // 팝업 닫기
+        }
+    </script>
+    
+
+</body>
+</html>
