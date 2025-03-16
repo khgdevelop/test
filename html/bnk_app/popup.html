@@ -35,15 +35,28 @@
                 li.dataset.name = item.name;
                 li.dataset.depth = item.depth;
                 li.dataset.useState = item.use_state; // use_state 속성 추가
-    
+
                 let ul = document.createElement("ul");
                 li.appendChild(ul);
                 parentElement.appendChild(li);
-    
+
+                // 클릭 이벤트 추가
+                li.onclick = (e) => {
+                    e.stopPropagation(); // 이벤트 버블링 방지
+                    let clickedElement = e.target;
+                    let parentUl = clickedElement.parentElement; // 부모 <ul> 요소
+                    let siblings = parentUl.children; // 형제 요소들 (li 목록)
+                    let index = Array.prototype.indexOf.call(siblings, clickedElement); // 자신의 순서)
+
+                    console.log("클릭된 요소:", clickedElement.dataset.name);
+                    console.log("형제 요소 개수:", siblings.length);
+                    console.log("자신의 순서 (0부터 시작):", index);
+                };
+
                 if (item.children) {
                     generateTree(item.children, ul);
                 }
-    
+
                 new Sortable(ul, {
                     group: 'shared',  // 그룹을 shared로 설정해 여러 트리에서 아이템을 드래그 할 수 있도록
                     animation: 150,
@@ -52,6 +65,10 @@
                 });
             });
         }
+
+
+
+
     
         function parseTree(element) {
             // depth와 use_state를 포함하여 객체를 반환
