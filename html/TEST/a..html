@@ -1,0 +1,42 @@
+<!-- A.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A 화면</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>A 화면</h1>
+    <div id="b-container"></div>
+
+    <script>
+        async function loadB() {
+            const response = await fetch('B.html');
+            const text = await response.text();
+
+            // 임시 div 생성 후, HTML 삽입
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = text;
+
+            // 기존 b-container에 HTML 삽입
+            document.getElementById("b-container").innerHTML = tempDiv.innerHTML;
+
+            // B.html 내부의 모든 script 실행
+            tempDiv.querySelectorAll("script").forEach(oldScript => {
+                const newScript = document.createElement("script");
+                if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                    newScript.async = false; // 순서대로 실행 보장
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                }
+                document.body.appendChild(newScript);
+            });
+        }
+
+        loadB();
+    </script>
+</body>
+</html>
