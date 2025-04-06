@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shadow Tabs</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html { margin: 0; height: 100%; }
+
+    .wrap { display: flex; flex-direction: column; height: 100vh; }
+
+    .header {
+      height: 60px;
+      background: #eee;
+      padding-left: 200px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header .tab {
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .header .tab.active {
+      background: #ddd;
+      font-weight: bold;
+    }
+
+    .lnb {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 100%;
+      background: salmon;
+      padding: 20px;
+    }
+
+    .lnb button {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    .inner {
+      flex: 1;
+      padding: 20px 20px 20px 230px;
+      background: greenyellow;
+      overflow-y: auto;
+    }
+
+    .contents > div {
+      display: none;
+    }
+
+    .contents > div.active {
+      display: block;
+    }
+
+    .footer {
+      height: 40px;
+      background: #ddd;
+      padding-left: 200px;
+      display: flex;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header" id="tabHeader"></div>
+    <div class="lnb">
+      <button onclick="openTab('table1')">테이블 1</button>
+      <button onclick="openTab('table2')">테이블 2</button>
+      <button onclick="openTab('table3')">테이블 3</button>
+    </div>
+    <div class="inner">
+      <div class="contents" id="contents"></div>
+    </div>
+    <div class="footer">푸터</div>
+  </div>
+
+  <script>
+    const tabs = {}; // opened tabs
+
+    async function openTab(name) {
+      // 이미 열려있는 탭이라면 그냥 보여주기
+      if (tabs[name]) {
+        activateTab(name);
+        return;
+      }
+
+      // fetch table HTML
+      const response = await fetch(`/tables/${name}.html`);
+      const html = await response.text();
+
+      // DOM 요소 생성
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('tab-content');
+      wrapper.dataset.tab = name;
+
+      const shadowHost = document.createElement('div');
+      const shadow = shadowHost.attachShadow({ mode: 'open' });
+      wrapper.appendChild(shadowHost);
+
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+
+      // 스크립트 분리 및 실행
+      const scripts = temp.querySelectorAll('script');
+      scripts.forEach(s => s.remove());
+      shadow.appendChild(temp);
+
+      scripts.forEach(script => {
+        if (script.src) {
+          const newScript = document.createElement('script');
+          newScript.src = script.src;
+          shadow.appendChild(newScript);
+        } else {
+          const fn = new Function('shadowRoot', script.textContent);
+          fn(shadow);
+        }
+      });
+
+      // DOM에 추가
+      document.getElementById('contents').appendChild(wrapper);
+
+      // 탭 정보 저장
+      tabs[name] = { wrapper };
+
+      // 탭 생성
+      const tab = document.createElement('div');
+      tab.className = 'tab';
+      tab.innerText = name.toUpperCase();
+      tab.dataset.tab = name;
+      tab.onclick = () => activateTab(name);
+      document.getElementById('tabHeader').appendChild(tab);
+
+      activateTab(name);
+    }
+
+    function activateTab(name) {
+      // 탭 콘텐츠 활성화
+      document.querySelectorAll('.contents > div').forEach(div => {
+        div.classList.toggle('active', div.dataset.tab === name);
+      });
+
+      // 탭 버튼 활성화
+      document.querySelectorAll('#tabHeader .tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === name);
+      });
+    }
+  </script>
+</body>
+</html>
