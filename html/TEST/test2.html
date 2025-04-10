@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>트리 체크박스</title>
+  <style>
+    ul {
+      list-style-type: none;
+    }
+    .tree-node {
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>트리 구조 체크박스</h2>
+<ul>
+  <li>
+    <label><input type="checkbox" class="node" data-id="1"> 상위노드 1</label>
+    <ul class="tree-node">
+      <li>
+        <label><input type="checkbox" class="node" data-id="1-1" data-parent="1"> 하위노드 1-1</label>
+      </li>
+      <li>
+        <label><input type="checkbox" class="node" data-id="1-2" data-parent="1"> 하위노드 1-2</label>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <label><input type="checkbox" class="node" data-id="2"> 상위노드 2</label>
+    <ul class="tree-node">
+      <li>
+        <label><input type="checkbox" class="node" data-id="2-1" data-parent="2"> 하위노드 2-1</label>
+        <ul class="tree-node">
+          <li>
+            <label><input type="checkbox" class="node" data-id="2-1-1" data-parent="2-1"> 하위노드 2-1-1</label>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<script>
+  const checkboxes = document.querySelectorAll('.node');
+
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', function () {
+      const isChecked = this.checked;
+      const id = this.dataset.id;
+
+      // 자식 체크박스들 처리
+      document.querySelectorAll(`.node[data-parent='${id}']`).forEach(child => {
+        child.checked = isChecked;
+        child.dispatchEvent(new Event('change')); // 하위로 재귀 적용
+      });
+
+      // 부모 체크박스 처리
+      if (!isChecked) return; // 해제는 자동으로 안 올림 (옵션으로 추가 가능)
+
+      const setParentChecked = (child) => {
+        const parentId = child.dataset.parent;
+        if (!parentId) return;
+        const parent = document.querySelector(`.node[data-id='${parentId}']`);
+        if (parent && !parent.checked) {
+          parent.checked = true;
+          setParentChecked(parent); // 재귀적으로 부모도 체크
+        }
+      };
+      setParentChecked(this);
+    });
+  });
+</script>
+
+</body>
+</html>
